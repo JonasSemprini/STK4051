@@ -1,22 +1,36 @@
-P_ci_1 = function(yi, p, tau_sqrd) {
-  num = p*dnorm(yi, 0, 1)
-  denomi = num + (1 - p) * dnorm(yi, 0, tau_sqrd + 1)
-  P_ci_0 = num/denomi
-  return(1-P_ci_0)
+# Function to calculate P(C_i=1 | y_i=y)
+calc_cond_prob <- function(y, p, tau) {
+  num <- p * dnorm(y, 0, 1)
+  den <- num + (1 - p) * dnorm(y, 0, tau + 1)
+  p_0 <- num / den
+  return(1 - p_0)
 }
-Expect = function(yi, tau_sqrd) {
-  E = yi*tau_sqrd/(tau_sqrd+1)
-  return(E)
+
+# Function to calculate E(beta | y_i=y)
+calc_expectation <- function(y, tau) {
+  e <- y * tau / (tau + 1)
+  return(e)
 }
-beta_hat = function(yi, p, tau_sqrd) {
-  PC1 = P_ci_1(yi, p, tau_sqrd)
-  E = Expect(yi, tau_sqrd)
-  beta = E*PC1
-  return(beta)
+
+# Function to calculate beta estimator given y_i=y
+calc_beta_hat <- function(y, p, tau) {
+  p_c1 <- calc_cond_prob(y, p, tau)
+  e <- calc_expectation(y, tau)
+  beta_hat <- e * p_c1
+  return(beta_hat)
 }
-#####Plotting######
-y = seq(-5,5,length =501)
-p=0.90
-tau_sqrd = 80
-beta_hat_yi=beta_hat(y,p,tau_sqrd)
-plot(y,beta_hat_yi)
+
+# Generate sequence of y values
+y_values <- seq(-5, 5, length.out = 501)
+p <- 0.90
+tau <- 80
+
+# Calculate beta estimator for each y value
+beta_hat_y <- calc_beta_hat(y_values, p, tau)
+
+# Plotting
+pdf("estimator_plot.pdf")  # Open PDF device
+plot(y_values, beta_hat_y, type = "l", col = "blue", lwd = 2, xlab = "y", ylab = expression(paste("Estimator of"," ", beta)), ylim = range(beta_hat_y))
+legend("topright", legend = "Estimator", col = "blue", lty = 1, lwd = 2)
+grid()
+dev.off()  # Close PDF device
