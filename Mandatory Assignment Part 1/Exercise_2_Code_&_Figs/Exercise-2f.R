@@ -17,7 +17,7 @@ log_likelihood <- function(params, y) {
 }
 
 # Set the parameters and data
-params <- c(p = 0.5, tau_squared = 1)
+params <- c(p = 0.6, tau_squared = 3)
 
 # Define a function to compute the negative log-likelihood
 neg_log_likelihood <- function(params) {
@@ -27,10 +27,12 @@ neg_log_likelihood <- function(params) {
 # Use the `optim()` function to estimate the observed Fisher information
 observed_fisher_information <- function(params, y) {
   hessian <- optim(params, neg_log_likelihood, method = "BFGS", hessian = TRUE, control = list(trace = 0))$hessian
-  fisher_info <- -hessian
+  fisher_info <- hessian
   return(fisher_info)
 }
 
 # Compute the observed Fisher information
 fisher_info <- observed_fisher_information(params, y)
+inv_fisher <- solve(fisher_info)
 print(fisher_info)
+print(inv_fisher)
