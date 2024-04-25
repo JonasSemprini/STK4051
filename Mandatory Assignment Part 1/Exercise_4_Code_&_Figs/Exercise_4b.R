@@ -1,5 +1,4 @@
 set.seed(2000)
-
 # Read city data
 city_data <- read.table("data/optimalTransport.ascii", header = FALSE)
 colnames(city_data) <- c("x", "y")
@@ -67,10 +66,10 @@ shortest_distance <- result$shortest_distance
 distance_sequence <- result$distance_sequence
 
 pdf("opt_tabu.pdf")
-plot(city_data, main = "TABU - TSP", col = "darkblue")
-lines(city_data[optimal_route, 1], city_data[optimal_route, 2], col = "red")
+plot(city_data, main = "TABU - TSP", col = "red")
+lines(city_data[optimal_route, 1], city_data[optimal_route, 2], col = "blue")
 points(city_data[1, ], col = "black", pch = 16)
-legend("topright", legend = c("Optimal Tour", "Start"), col = c("red", "black"), pch = c(NA, 16),  lty=c(1, NA))
+legend("topright", legend = c("Optimal Tour", "Start"), col = c("blue", "black"), pch = c(NA, 16),  lty=c(1, NA))
 grid()
 dev.off()
 
@@ -94,14 +93,13 @@ cat("Number of iterations to find optimal route:", which.min(distance_sequence),
 # Seed 2000
 
 # > cat("Shortest distance:", shortest_distance, "\n")
-# Shortest distance: 3.770697 
+# Shortest distance: 3.790939 
 # > cat("Optimal route:\n")
 # Optimal route:
 #   > print(optimal_route)
-# [1]  1 17  9 15 18 12  8 21  4  7 20 10  5  2  6 11 16  3 13 14 19  1
+# [1]  1 19 14 13  3 16 11  6  2  5 10 20  7  4 21  8 12  9 15 18 17  1
 # > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
-# Number of iterations to find optimal route: 569 
-
+# Number of iterations to find optimal route: 6387 
 
 # Random Seed 
 #Best distance: 3.62219362770275
