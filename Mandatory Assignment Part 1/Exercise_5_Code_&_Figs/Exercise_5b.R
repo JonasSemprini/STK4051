@@ -1,22 +1,22 @@
 # Load data
-data <- read.table("data/functionEstimationNN.ascii", header = FALSE, col.names = c("x", "y"))
+dataset <- read.table("data/functionEstimationNN.ascii", header = FALSE, col.names = c("x", "y"))
 
 # Sample a subset of the data
 set.seed(123) # For reproducibility
 subset_size <- 1000
-data_subset <- data[sample(nrow(data), subset_size), ]
+subset <- dataset[sample(nrow(dataset), subset_size), ]
 
 # Train-test split
 train_ratio <- 0.8
-train_indices <- sample(1:nrow(data_subset), train_ratio * nrow(data_subset))
-train_data <- data_subset[train_indices, ]
-test_data <- data_subset[-train_indices, ]
+train_indices <- sample(1:nrow(subset), train_ratio * nrow(subset))
+train_set <- subset[train_indices, ]
+test_set <- subset[-train_indices, ]
 
 # Extract train and test data
-x_train <- train_data$x
-y_train <- train_data$y
-x_test <- test_data$x
-y_test <- test_data$y
+x_train <- train_set$x
+y_train <- train_set$y
+x_test <- test_set$x
+y_test <- test_set$y
 
 # Network parameters
 n_inputs <- 1
@@ -24,19 +24,19 @@ n_hidden <- 50
 n_outputs <- 1
 
 # Initialize weights and biases
-alpha <- matrix(rnorm(n_inputs * n_hidden, sd = sqrt(2/n_inputs)), nrow = n_inputs, ncol = n_hidden)
-alpha_0 <- runif(n_hidden, min = 0, max = 1)
-beta <- matrix(rnorm(n_hidden * n_outputs, sd = sqrt(2/n_hidden)), nrow = n_hidden, ncol = n_outputs)
-beta_0 <- runif(n_outputs, min = 0, max = 1)
+weights_hidden <- matrix(rnorm(n_inputs * n_hidden, sd = sqrt(2/n_inputs)), nrow = n_inputs, ncol = n_hidden)
+bias_hidden <- runif(n_hidden, min = 0, max = 1)
+weights_output <- matrix(rnorm(n_hidden * n_outputs, sd = sqrt(2/n_hidden)), nrow = n_hidden, ncol = n_outputs)
+bias_output <- runif(n_outputs, min = 0, max = 1)
 
 # Hyperparameters
 learning_rate <- 0.001
 learning_rate_decay <- 1e-4
-batch_size <- 5
-n_epochs <- 50
+batch_size <- 50
+n_epochs <- 200
 
 # Train network with SGD
-SSEseq <- MSEseq <- MSE_testseq <- NULL
+SSE_seq <- MSE_seq <- MSE_test_seq <- NULL
 iter <- 0
 for (epoch in 1:n_epochs) {
   learning_rate <- learning_rate / (1 + epoch * learning_rate_decay)
@@ -51,45 +51,45 @@ for (epoch in 1:n_epochs) {
     y_batch <- y_shuffled[batch]
     
     # Forward propagation
-    h_batch <- pmax(x_batch %*% alpha + alpha_0, 0)
-    y_pred_batch <- h_batch %*% beta + beta_0
+    hidden_output <- pmax(x_batch %*% weights_hidden + bias_hidden, 0) # ReLU activation
+    y_pred_batch <- hidden_output %*% weights_output + bias_output
     
     # Loss calculation
     sse_batch <- sum((y_pred_batch - y_batch)^2)
     mse_batch <- sse_batch / length(batch)
-    SSEseq <- c(SSEseq, sse_batch)
-    MSEseq <- c(MSEseq, mse_batch)
+    SSE_seq <- c(SSE_seq, sse_batch)
+    MSE_seq <- c(MSE_seq, mse_batch)
     
     # Backward propagation
     d_y_sse_batch <- - 2 * (y_batch - y_pred_batch) / length(batch)
-    d_beta <- t(h_batch) %*% d_y_sse_batch
-    d_beta_0 <- colSums(d_y_sse_batch)
-    d_h <- d_y_sse_batch %*% t(beta) * (h_batch > 0)
-    d_alpha <- t(x_batch) %*% d_h
-    d_alpha_0 <- colSums(d_h)
+    d_weights_output <- t(hidden_output) %*% d_y_sse_batch
+    d_bias_output <- colSums(d_y_sse_batch)
+    d_hidden <- d_y_sse_batch %*% t(weights_output) * (hidden_output > 0)
+    d_weights_hidden <- t(x_batch) %*% d_hidden
+    d_bias_hidden <- colSums(d_hidden)
     
     # Update weights and biases
-    alpha <- alpha - learning_rate * d_alpha
-    alpha_0 <- alpha_0 - learning_rate * d_alpha_0
-    beta <- beta - learning_rate * d_beta
-    beta_0 <- beta_0 - learning_rate * d_beta_0
+    weights_hidden <- weights_hidden - learning_rate * d_weights_hidden
+    bias_hidden <- bias_hidden - learning_rate * d_bias_hidden
+    weights_output <- weights_output - learning_rate * d_weights_output
+    bias_output <- bias_output - learning_rate * d_bias_output
     
     # Forward propagation for test data
-    h_test <- pmax(x_test %*% alpha + alpha_0, 0)
-    y_pred_test <- h_test %*% beta + beta_0
+    hidden_output_test <- pmax(x_test %*% weights_hidden + bias_hidden, 0)
+    y_pred_test <- hidden_output_test %*% weights_output + bias_output
     mse_test <- sum((y_pred_test - y_test)^2) / length(y_test)
-    MSE_testseq <- c(MSE_testseq, mse_test)
+    MSE_test_seq <- c(MSE_test_seq, mse_test)
   }
   
   # Print MSE for current epoch
-  cat("Epoch:", epoch, "| MSE:", MSEseq[length(MSEseq)], "| Learning Rate:", learning_rate, "\n")
+  cat("Epoch:", epoch, "| MSE:", MSE_seq[length(MSE_seq)], "| Learning Rate:", learning_rate, "\n")
 }
 
 # Plot MSE for training and test data
-# Plot MSE for training and test data with y-axis scaled from 0 to 1
+# Plot MSE for training and test data with y-axis scaled from 0 to 2
 pdf("MSE_train_test.pdf")
-plot(MSEseq, type = "l", xlab = "Iteration", ylab = "MSE ", col = "black", ylim = c(0, 2))
-lines(MSE_testseq, type = "l", col = "red")
+plot(MSE_seq, type = "l", xlab = "Iteration", ylab = "MSE ", col = "black", ylim = c(0, 0.2))
+lines(MSE_test_seq, type = "l", col = "red")
 legend("topright", legend = c("Training MSE", "Test MSE"), col = c("black", "red"), lty = 1)
 grid()
 dev.off()
@@ -102,7 +102,7 @@ legend("topright", legend = c("True Data", "Predicted Values"), col = c("blue", 
 grid()
 dev.off()
 # Calculate residuals
-residuals <- y_test - y_pred_test
+residuals <- abs(y_test - y_pred_test)
 
 # # Plot residuals vs. predicted values
 # plot(y_pred_test, residuals, col = "blue", main = "Residuals vs. Predicted Values", xlab = "Predicted Values", ylab = "Residuals")
@@ -110,7 +110,7 @@ residuals <- y_test - y_pred_test
 
 # Histogram of residuals
 pdf("Residual_histo.pdf")
-hist(residuals, col = "darkblue", main = "Histogram of Residuals", xlab = "Residuals", ylab = "Frequency")
+hist(residuals, col = "lightblue", main = "Histogram of Residuals", xlab = "Residuals", ylab = "Frequency")
 grid()
 dev.off()
 # Scatterplot of residuals

@@ -1,0 +1,897 @@
+\section{GitHub repository} 
+\section{Source Code} \label{appendix:b}
+\section*{Exercise 1 c): Plot the function $f_{\gamma, p}(\beta)$ for $\gamma = 1$ and $\gamma = 0.2$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black]
+\begin{lstlisting}[caption={Exercise 1c}, label={lst:plot_func}]
+
+# Define parameters
+beta <- seq(-5, 5, length = 101)
+gamma_list <- c(1, 0.2)
+p_list <- c(1.1, 2, 5, 100)
+colors <- c("black", rainbow(length(p_list) - 1, start = 0.2, end = 0.7))
+
+# Define the function
+f <- function(beta, gamma, p) {
+  beta + gamma * sign(beta) * abs(beta) ^ (p - 1)
+}
+
+# Plotting function
+plot_function <- function(gamma, title) {
+  plot(beta, rep(0, length(beta)), type = 'n', ylim = c(-8, 8), 
+       xlim = c(-5.1, 5.1), xlab = expression(beta), lwd = 2, main = title, ylab = expression(paste("f"["p, y"], "(", beta, ")")))
+  for (i in 1:length(p_list)) {
+    lines(beta, f(beta, gamma, p_list[i]), col = colors[i], lwd = 2)
+  }
+  legend('topleft', legend = paste('p =', p_list), col = colors, lwd = 2, bty = 'n', title = "Values of p", xjust = 0, yjust = 1, inset = c(0, 0.05))
+  lines(beta, beta, col = 'red')
+  text(mean(range(beta)), max(beta) * 1.1, labels = expression(paste("f", "(", beta, ")", " = ", beta)), pos = 3, col = 'red')
+}
+
+# Set the size of the plot
+options(repr.plot.width = 12, repr.plot.height = 8)
+
+# Plotting for each value of gamma
+eq1 <- bquote(bold(gamma == .(gamma_list[1])))
+eq2 <- bquote(bold(gamma == .(gamma_list[2])))
+
+plot_function(gamma_list[1], eq1)
+plot_function(gamma_list[2], eq2)
+
+# Save figures as PDF
+# pdf(file = "plots.pdf")
+# plot_function(gamma_list[1], eq1)
+# plot_function(gamma_list[2], eq2)
+# dev.off()
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{50mm}
+\section*{Exercise 1 d): Root of bisection method for $f_{\gamma, p}(\beta)$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black]
+\begin{lstlisting}[caption={Exercise 1d}, label={lst:bisection}]
+# Define the function
+f <- function(beta, gamma, p) {
+  beta + gamma * sign(beta) * abs(beta) ^ (p - 1)
+}
+
+# Bisection method for finding the root of an expression
+bisection_method <- function(y, gamma, p, init_beta1, init_beta2, eps = 1e-10, max_iter = 1000) {
+  func <- function(beta) f(beta, gamma, p) - y
+  check_roots <- func(init_beta1) * func(init_beta2)
+  if (check_roots == 0) return(ifelse(func(init_beta1) == 0, init_beta1, init_beta2))
+  if (check_roots > 0) stop('The initial guesses have the same sign of the function (not acceptable)')
+  iter <- 0
+  while (iter < max_iter) {
+    mid_beta <- (init_beta1 + init_beta2) / 2 
+    if (func(mid_beta) * func(init_beta1) < 0) init_beta2 <- mid_beta
+    else if (func(mid_beta) * func(init_beta2) < 0) init_beta1 <- mid_beta
+    else return(mid_beta)
+    iter <- iter + 1
+    if (abs(func(mid_beta)) < eps) return(mid_beta)
+  }
+  return(mid_beta)
+}
+# Test bisection method
+gamma_val <- 1
+p_values <- c(1.1, 2, 100)
+y_values <- seq(-5, 5, length = 101)
+init_beta1_val <- -5
+init_beta2_val <- 4.9
+
+# Plotting function
+plot_function <- function(p) sapply(y_values, function(y_i) bisection_method(y_i, gamma_val, p, init_beta1_val, init_beta2_val))
+
+# Plotting
+plot_colors <- rainbow(length(p_values))
+plot_legend <- paste('p =', p_values)
+
+pdf("bisection_plots.pdf")
+plot(y_values, plot_function(p_values[1]), type='l', col = plot_colors[1], ylim = c(-5, 5), 
+     xlim = c(-5.1, 5.1), lwd = 2, main = expression(paste("Optimal"," ", beta)), xlab = 'y', ylab = expression(beta["opt"]))
+for (i in 2:length(p_values)) lines(y_values, plot_function(p_values[i]), col = plot_colors[i], lwd = 2)
+legend('topleft', legend = plot_legend, col = plot_colors, lwd = 2, bty = 'n', title = "Values of p", xjust = 0, yjust = 1, inset = c(0, 0.05))
+dev.off()
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{60mm}
+\section*{Exercise 1 e): Estimation of parameters $\beta_i$, \texttt{sparseDataWithErrors.dat}}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black,breakable]
+\begin{lstlisting}[caption={Exercise 1e}, label={lst:bisection_est}]
+# Define the function
+f <- function(beta, gamma_val, p) {
+  beta + gamma_val * sign(beta) * abs(beta) ^ (p - 1)
+}
+
+# Bisection method for finding the root of an expression
+bisection_method <- function(y, gamma, p, init_beta1, init_beta2, eps = 1e-10, max_iter = 1000) {
+  func <- function(beta) f(beta, gamma, p) - y
+  check_roots <- func(init_beta1) * func(init_beta2)
+  if (check_roots == 0) return(ifelse(func(init_beta1) == 0, init_beta1, init_beta2))
+  if (check_roots > 0) stop('The initial guesses have the same sign of the function (not acceptable)')
+  iter <- 0
+  while (iter < max_iter) {
+    mid_beta <- (init_beta1 + init_beta2) / 2 
+    if (func(mid_beta) * func(init_beta1) < 0) init_beta2 <- mid_beta
+    else if (func(mid_beta) * func(init_beta2) < 0) init_beta1 <- mid_beta
+    else return(mid_beta)
+    iter <- iter + 1
+    if (abs(func(mid_beta)) < eps) return(mid_beta)
+  }
+  return(mid_beta)
+}
+
+# Load data
+sparseData <- read.table("data/sparseDataWithErrors.ascii", header = FALSE)
+colnames(sparseData) <- c('betaGT', 'y')
+
+# Collecting the data from the dataframe
+y <- sparseData$y
+betaGT <- sparseData$betaGT
+
+# We want to estimate beta_optimal for penalized regression
+gamma_val <- 1
+p_values <- c(1.1, 2, 100)
+init_beta1_val <- -100
+init_beta2_val <- 101
+residuals <- c()
+beta_p <- list()
+# Finding the residuals for different p-values
+for (p in p_values){
+  estimation <- c()
+  for (y_i in y){
+    estimation <- c(estimation, bisection_method(y_i, gamma_val, p, init_beta1_val, init_beta2_val))
+  }
+  
+  # comparing the estimation vs the ground truth
+  beta_p <- c(beta_p, list(estimation))
+  residuals <- c(residuals, sum((estimation - betaGT)^2))
+}
+
+residuals <- data.frame(p_values, residuals)
+
+# Comparison to the MLE estimator, just equal to y
+beta_MLE <- y
+residual_MLE <- sum((beta_MLE - betaGT)^2)
+
+# Estimate beta by using the residuals
+y_list3 <- rep(list(y), 3)
+
+beta_alternative <- list()
+residuals_alternative <- rep(NA, 3) 
+for (i in 1:3) {
+  beta_alternative <- c(beta_alternative, list(unlist(y_list3[i]) - unlist(beta_p[i])))
+  residuals_alternative[i] <- sum((unlist(beta_alternative[i]) - betaGT)^2)
+}
+
+residuals_alternative_table <- data.frame(p_values, residuals_alternative)
+
+# Print residuals
+print(residuals)
+print(residual_MLE)
+print(residuals_alternative_table)
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 2 d): EM-algorithm, $Q(\theta|\theta^(t)$, \texttt{sparseDataWithErrors.dat}}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 2d}, label={lst:EM-alg}]
+# Define the function to calculate p_i
+calculate_pi <- function(y_i, squared_tau, p) {
+  num <- dnorm(y_i, mean = 0, sd = 1) * p
+  denom <- num + dnorm(y_i, mean = 0, sd = sqrt(squared_tau + 1)) * (1 - p)
+  num / denom
+}
+
+# Define the EM algorithm function
+EM_algorithm <- function(y, p_init, squared_tau_init, printing = FALSE, eps = 1e-10, max_iter = 1000) {
+  iter <- 1
+  converged <- FALSE
+  p_prev <- p_init
+  squared_tau_prev <- squared_tau_init
+  
+  while (!(converged) && iter < max_iter) {
+    p_new <- mean(sapply(y, function(y_i) calculate_pi(y_i, squared_tau_prev, p_prev)))
+    squared_tau_new <- sum(sapply(y, function(y_i) {
+      pi_val <- calculate_pi(y_i, squared_tau_prev, p_prev)
+      (1 - pi_val) * y_i^2
+    })) / sum(sapply(y, function(y_i) 1 - calculate_pi(y_i, squared_tau_prev, p_prev))) - 1
+    
+    # Check for convergence
+    if (abs(p_new - p_prev) + abs(squared_tau_new - squared_tau_prev) < eps) {
+      converged <- TRUE
+    }
+    
+    if (printing) {
+      print(sprintf('iter: %2.0f, %f %f', iter, p_prev, squared_tau_prev))
+    }
+    
+    # Update parameters
+    p_prev <- p_new
+    squared_tau_prev <- squared_tau_new
+    
+    iter <- iter + 1
+  }
+  
+  c(p_new, squared_tau_new)
+}
+
+# Read the sparse data
+sparseData <- read.table("data/sparseDataWithErrors.ascii", header = FALSE)
+colnames(sparseData) <- c('betaGT', 'y')
+
+# Extract data from the dataframe
+y <- sparseData$y
+
+# Initialize parameters
+squared_tau_init <- 3
+p_init <- 0.5
+
+# Run the EM algorithm and collect results
+values <- EM_algorithm(y, p_init, squared_tau_init, printing = TRUE)
+p_opt <- values[1]
+squared_tau_opt <- values[2]
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 2 e): Bootstrap estimate}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 2e}, label={lst:tau_p_est}]
+# Set seed for reproducibility
+set.seed(123)
+
+# Read sparse data
+sparse_data <- read.table("data/sparseDataWithErrors.ascii", header = FALSE)
+colnames(sparse_data) <- c('betaGT', 'y')
+
+# Extract data
+y <- sparse_data$y
+
+# Define function to calculate p_i
+calculate_pi <- function(y_i, tau_squared, p) {
+  numerator <- dnorm(y_i, mean = 0, sd = 1) * p
+  denominator <- numerator + dnorm(y_i, mean = 0, sd = sqrt(tau_squared + 1)) * (1 - p)
+  numerator / denominator
+}
+
+# Define EM algorithm function
+EM_algorithm <- function(y, p_init, tau_squared_init, eps = 1e-10, max_iter = 1000) {
+  iter <- 1
+  converged <- FALSE
+  p_prev <- p_init
+  tau_squared_prev <- tau_squared_init
+  
+  while (!(converged) && iter < max_iter) {
+    p_new <- mean(sapply(y, function(y_i) calculate_pi(y_i, tau_squared_prev, p_prev)))
+    tau_squared_new <- sum(sapply(y, function(y_i) {
+      pi_val <- calculate_pi(y_i, tau_squared_prev, p_prev)
+      (1 - pi_val) * y_i^2
+    })) / sum(sapply(y, function(y_i) 1 - calculate_pi(y_i, tau_squared_prev, p_prev))) - 1
+    
+    # Check for convergence
+    if (abs(p_new - p_prev) + abs(tau_squared_new - tau_squared_prev) < eps) {
+      converged <- TRUE
+    }
+    
+    # Update parameters
+    p_prev <- p_new
+    tau_squared_prev <- tau_squared_new
+    
+    iter <- iter + 1
+  }
+  
+  c(p_new, tau_squared_new)
+}
+
+# Initialization
+tau_squared_init <- mean(y)
+p_init <- 0.5
+
+# Run EM algorithm
+values <- EM_algorithm(y, p_init, tau_squared_init)
+p_opt <- values[1]
+tau_squared_opt <- values[2]
+
+# Bootstrap method
+B <- 1000  # Increase to 1000
+n <- length(y)
+p_simulated <- numeric(B)
+tau_squared_simulated <- numeric(B)
+
+for (b in 1:B) {
+  y_sample <- sample(y, n, replace = TRUE)
+  values <- EM_algorithm(y_sample, p_init, tau_squared_init)
+  p_simulated[b] <- values[1]
+  tau_squared_simulated[b] <- values[2]
+  if(b %% 100 == 0){
+    print(b)
+  }
+}
+
+# Plot results and save to PDF with blue color
+pdf("bootstrap_results.pdf")
+plot(tau_squared_simulated, p_simulated, xlab = "Estimated Tau Squared", ylab = "Estimated p", col = "blue")
+dev.off()
+
+# Bias
+cat("Bias:\n")
+print(mean(p_simulated) - p_opt)
+print(mean(tau_squared_simulated) - tau_squared_opt)
+
+# Standard error
+cat("Standard error:\n")
+print(sd(p_simulated))
+print(sd(tau_squared_simulated))
+
+# 95% confidence interval for p_simulated
+p_conf_int <- quantile(p_simulated, c(0.025, 0.975))
+cat("95% Confidence interval for p_simulated:\n")
+print(p_conf_int)
+
+# 95% confidence interval for tau_squared_simulated
+tau_squared_conf_int <- quantile(tau_squared_simulated, c(0.025, 0.975))
+cat("95% Confidence interval for tau_squared_simulated:\n")
+print(tau_squared_conf_int)
+\end{lstlisting}
+\end{tcolorbox}
+
+\section*{Exercise 2 f): Observed information: -$H_\ell$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black]
+\begin{lstlisting}[caption={Exercise 2f}, label={lst:fisher_inf}]
+set.seed(123)
+
+# Read sparse data
+sparse_data <- read.table("data/sparseDataWithErrors.ascii", header = FALSE)
+colnames(sparse_data) <- c('betaGT', 'y')
+
+# Extract data
+y <- sparse_data$y
+
+# Define the log-likelihood function
+log_likelihood <- function(params, y) {
+  p <- params[1]
+  tau_squared <- params[2]
+  
+  log_term <- sum(log(p * dnorm(y, mean = 0, sd = 1) + (1 - p) * dnorm(y, mean = 0, sd = sqrt(tau_squared + 1))))
+  return(-log_term)  # Note: We negate the log-likelihood for minimization
+}
+
+# Set the parameters and data
+params <- c(p = 0.6, tau_squared = 3)
+
+# Define a function to compute the negative log-likelihood
+neg_log_likelihood <- function(params) {
+  return(log_likelihood(params, y))
+}
+
+# Use the `optim()` function to estimate the observed Fisher information
+observed_fisher_information <- function(params, y) {
+  hessian <- optim(params, neg_log_likelihood, method = "BFGS", hessian = TRUE, control = list(trace = 0))$hessian
+  fisher_info <- hessian
+  return(fisher_info)
+}
+
+# Compute the observed Fisher information
+fisher_info <- observed_fisher_information(params, y)
+inv_fisher <- solve(fisher_info)
+print(fisher_info)
+print(inv_fisher)
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 2 g): Contour of likelihood: $\ell(\theta|y)$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black]
+\begin{lstlisting}[caption={Exercise 2g}, label={lst:contour_plot}]
+# Read sparse data and rename columns
+data_df <- read.table("data/sparseDataWithErrors.ascii", header = FALSE)
+colnames(data_df) <- c('beta_GT', 'y')
+
+# Extract data
+y <- data_df$y
+
+# Define the log-likelihood function
+likelihood <- function(y, p, tau_sq) {
+  fy <- p * dnorm(y, mean = 0, sd = 1) + (1 - p) * dnorm(y, mean = 0, sd = sqrt(tau_sq + 1))
+  return(sum(log(fy)))
+}
+
+# Define the grid for p and tau_sq
+p_grid <- seq(0.8, 1, length.out = 101)
+tau_sq_grid <- seq(50, 130, length.out = 101)
+
+# Calculate the log-likelihood values on the grid
+z <- outer(p_grid, tau_sq_grid, Vectorize(function(p, tau_sq) likelihood(y, p, tau_sq)))
+
+# Normalize the log-likelihood values
+z <- max(z) / z
+
+# Define contour levels
+levels_ <- c(0.01, 0.1, 0.5, 0.75, 0.95, 0.98, 0.99, 0.9999, 1)
+
+red_palette <- colorRampPalette(c("#67000D", "#A50F15", "#CB181D", "#EF3B2C", "#FB6A4A", "#FC9272", "#FCBBA1", "#FEE0D2"))
+
+# Plot the contour plot with the reversed custom red color palette
+pdf("contour_plot.pdf")
+#contour(tau_sq_grid, p_grid, z, levels = levels_, xlab = "squared_tau", ylab = "p", col = red_palette(length(levels_)))
+filled.contour(tau_sq_grid, p_grid, z, ylab = 'p', xlab = expression(tau^2), levels = levels_, col = red_palette(length(levels_))) 
+
+# Find the ML estimator and mark it in the plot
+ML_idx <- which(z == max(z), arr.ind = TRUE)
+points(tau_sq_grid[ML_idx[2]], p_grid[ML_idx[1]], col = "black", pch = 16)
+
+# Add label for ML estimator coordinates
+text(tau_sq_grid[ML_idx[2]], p_grid[ML_idx[1]], labels = paste("(", tau_sq_grid[ML_idx[2]], ",", p_grid[ML_idx[1]], ")"), pos = 3)
+dev.off()
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{20mm}
+\section*{Exercise 3 b): Plot of conditional expectation: $\mathbb{E}(\beta_i | y_i) = \mathbb{P}\left(C_i=1 \mid y_i=y\right) \mathbb{E}\left(\beta_i \mid y_i=y, C_i=1\right)$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black]
+\begin{lstlisting}[caption={Exercise 3b}, label={lst:beta_hat_estimate}]
+# Function to calculate P(C_i=1 | y_i=y)
+calc_cond_prob <- function(y, p, tau) {
+  num <- p * dnorm(y, 0, 1)
+  den <- num + (1 - p) * dnorm(y, 0, tau + 1)
+  p_0 <- num / den
+  return(1 - p_0)
+}
+
+# Function to calculate E(beta | y_i=y)
+calc_expectation <- function(y, tau) {
+  e <- y * tau / (tau + 1)
+  return(e)
+}
+
+# Function to calculate beta estimator given y_i=y
+calc_beta_hat <- function(y, p, tau) {
+  p_c1 <- calc_cond_prob(y, p, tau)
+  e <- calc_expectation(y, tau)
+  beta_hat <- e * p_c1
+  return(beta_hat)
+}
+
+# Generate sequence of y values
+y_values <- seq(-5, 5, length.out = 501)
+p <- 0.90
+tau <- 80
+
+# Calculate beta estimator for each y value
+beta_hat_y <- calc_beta_hat(y_values, p, tau)
+
+# Plotting
+pdf("estimator_plot.pdf")  # Open PDF device
+plot(y_values, beta_hat_y, type = "l", col = "blue", lwd = 2, xlab = "y", ylab = expression(paste("Estimator of"," ", beta)), ylim = range(beta_hat_y))
+legend("topright", legend = "Estimator", col = "blue", lty = 1, lwd = 2)
+grid()
+dev.off()  # Close PDF device
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{10mm}
+\section*{Exercise 3 c) Evaluation of estimator: \texttt{sparseDataWithErrors.dat}, $p=0.9$ and $\tau^2 = 80$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 3c}, label={lst:residual}]
+# Read the sparse data
+sparseData <- read.table("data/sparseDataWithErrors.ascii", header = FALSE)
+colnames(sparseData) <- c('betaGT', 'y')
+betaGT <- sparseData$betaGT
+# Extract data from the dataframe
+y <- sparseData$y
+
+# Function to calculate P(C_i=1 | y_i=y)
+calc_cond_prob <- function(y, p, tau) {
+  num <- p * dnorm(y, 0, 1)
+  den <- num + (1 - p) * dnorm(y, 0, tau + 1)
+  p_0 <- num / den
+  return(1 - p_0)
+}
+
+# Function to calculate E(beta | y_i=y)
+calc_expectation <- function(y, tau) {
+  e <- y * tau / (tau + 1)
+  return(e)
+}
+
+# Function to calculate beta estimator given y_i=y
+calc_beta_hat <- function(y, p, tau) {
+  p_c1 <- calc_cond_prob(y, p, tau)
+  e <- calc_expectation(y, tau)
+  beta_hat <- e * p_c1
+  return(beta_hat)
+}
+
+# Generate sequence of y values
+p <- 0.90
+tau <- 80
+
+# Calculate beta estimator for each y value
+beta_hat_y <- calc_beta_hat(y, p, tau)
+
+residuals = sum((beta_hat_y-betaGT)^2)
+
+print(residuals)
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{10mm}
+\section*{Exercise 4 a): Simulated annealing for Travelling salesman problem (TSP)}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black,breakable]
+\begin{lstlisting}[caption={Exercise 4a}, label={lst:simul_anneal}]
+library(ggplot2)
+
+# Read data
+optimalTransport <- read.table("data/optimalTransport.ascii", header = FALSE)
+colnames(optimalTransport) <- c('x', 'y')
+
+set.seed(124)
+# Define neighborhood function (swap two cities)
+swap_cities <- function(tour) {
+  n <- length(tour)
+  i <- sample(2:(n - 1), 1)
+  j <- sample(setdiff(1:n, i), 1)
+  new_tour <- tour
+  new_tour[c(i, j)] <- new_tour[c(j, i)]
+  return(new_tour)
+}
+
+# Simulated annealing algorithm
+simulated_annealing <- function(distances, initial_temp, cooling_rate, max_iter) {
+  # Define objective function (total traveling time)
+  total_time <- function(tour, distances) {
+    total <- 0
+    n <- length(tour)
+    for (i in 1:(n - 1)) {
+      total <- total + distances[tour[i], tour[i + 1]]
+    }
+    total <- total + distances[tour[n], tour[1]]  # Return to starting city
+    return(total)
+  }
+  
+  n <- nrow(distances)
+  current_tour <- sample(1:n)
+  best_tour <- current_tour
+  best_time <- total_time(current_tour, distances)
+  current_temp <- initial_temp
+  
+  for (iter in 1:max_iter) {
+    new_tour <- swap_cities(current_tour)
+    # Calculate total time
+    delta <- total_time(new_tour, distances) - total_time(current_tour, distances)
+    
+    if (delta < 0 || runif(1) < exp(-delta / current_temp)) {
+      current_tour <- new_tour
+      current_time <- total_time(new_tour, distances)
+      if (current_time < best_time) {
+        best_tour <- new_tour
+        best_time <- current_time
+      }
+    }
+    
+    current_temp <- current_temp * cooling_rate
+  }
+  
+  return(list(best_tour = best_tour, best_time = best_time))
+}
+
+# Calculate distances matrix (Euclidean distance between cities)
+distances <- as.matrix(dist(cbind(optimalTransport$x, optimalTransport$y)))
+
+# Set parameters
+initial_temp <- 10
+cooling_rates <- seq(0.7, 0.99, by = 0.01)  # Range of cooling rates
+max_iter <- 10000
+
+# Store results
+results <- list()
+
+# Run simulated annealing for each cooling rate
+for (cooling_rate in cooling_rates) {
+  result <- simulated_annealing(distances, initial_temp, cooling_rate, max_iter)
+  best_tour <- result$best_tour
+  best_time <- result$best_time
+  results[[as.character(cooling_rate)]] <- list(tour = best_tour, total_time = best_time)
+}
+
+# Find the best cooling rate
+best_result <- which.min(sapply(results, function(x) x$total_time))
+best_cooling_rate <- as.numeric(names(results)[best_result])
+
+# Output best tour and total time for the best cooling rate
+cat("Best Cooling Rate:", best_cooling_rate, "\n")
+cat("Best Tour:", results[[as.character(best_cooling_rate)]]$tour, "\n")
+cat("Best Total Time:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
+
+# Plot the most optimal trip
+optimal_path <- c(results[[as.character(best_cooling_rate)]]$tour, results[[as.character(best_cooling_rate)]]$tour[1])
+cities <- optimalTransport[optimal_path, ]
+
+pdf("opt_annealing.pdf")
+ggplot() +
+  geom_path(data = cities, aes(x = x, y = y), color = "blue") +
+  geom_point(data = cities, aes(x = x, y = y), color = "red") +
+  geom_text(data = cities, aes(x = x, y = y, label = rownames(cities)), hjust = -0.2, vjust = 0.5) +
+  ggtitle("Most Optimal Tour") +
+  theme_minimal()
+dev.off()
+# Plot distances with respect to cooling rates
+data <- data.frame(cooling_rates = as.numeric(names(results)),
+                   total_time = sapply(results, function(x) x$total_time))
+
+pdf("opt_cooling.pdf")
+ggplot(data, aes(x = cooling_rates, y = total_time)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(x = "Cooling Rate", y = "Distance") +
+  ggtitle("Distances with Respect to Cooling Rate") +
+  theme_minimal()
+
+dev.off()
+#Random seed
+# Best Cooling Rate: 0.77 
+# > cat("Best Tour:", results[[as.character(best_cooling_rate)]]$tour, "\n")
+# Best Tour: 17 9 15 18 12 8 21 4 7 20 10 5 2 6 11 16 3 13 14 19 1 
+# > cat("Best Total Time:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
+# Best Total Time: 3.770697 
+
+
+#Seed(124)
+# Best Cooling Rate: 0.97 
+# > cat("Best Tour:", results[[as.character(best_cooling_rate)]]$tour, "\n")
+# Best Tour: 2 11 16 3 13 14 19 1 17 9 15 18 12 8 21 4 7 20 10 5 6 
+# > cat("Best Total Time:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
+# Best Total Time: 3.902836 
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{10mm}
+\section*{Exercise 4 b): TABU - Search for Travelling salesman problem (TSP)}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black,breakable]
+\begin{lstlisting}[caption={Exercise 4b}, label={lst:tabu}]
+
+set.seed(2000)
+# Read city data
+city_data <- read.table("data/optimalTransport.ascii", header = FALSE)
+colnames(city_data) <- c("x", "y")
+
+# Function to calculate total journey distance
+calculate_journey_distance <- function(route, distances) {
+  total <- sum(distances[cbind(route[-length(route)], route[-1])])
+  total <- total + distances[route[length(route)], route[1]]  # Return to starting point
+  return(total)
+}
+
+# Function to perform TABU search
+find_optimal_route <- function(distances, max_iterations, tabu_list_length) {
+  num_cities <- nrow(distances)  # Number of cities
+  theta <- c(1, sample(2:num_cities), 1)# Random order and returns to the starting city
+  d <- as.vector(as.matrix(distances))
+  initial_distance <- calculate_journey_distance(theta, distances)  # Total distance of the initial route
+  optimal_distance <- initial_distance  # Initial optimal distance
+  distance_sequence <- initial_distance  # Sequence of distances
+  num_swaps <- num_cities * (num_cities - 1) / 2 - (num_cities - 1)  # Number of iterations for neighbor search
+  search_table <- combn(2:num_cities, 2)  # Table of neighbor search
+  tabu_table <- numeric(0)  # Tabu table
+  for (iteration in 1:max_iterations) {
+    optimal_distance2 <- optimal_distance + 10
+    for (i in 1:num_swaps) {
+      if (!(i %in% tabu_table)) {
+        swap_index1 <- search_table[1, i]
+        swap_index2 <- search_table[2, i]
+        new_route <- theta
+        new_route[c(swap_index1, swap_index2)] <- theta[c(swap_index2, swap_index1)]
+        new_distance <- calculate_journey_distance(new_route, distances)
+        if (new_distance < optimal_distance2) {
+          optimal_distance2 <- new_distance
+          swap_index <- i
+        }
+      }
+    }
+    theta[c(search_table[1, swap_index], search_table[2, swap_index])] <- theta[c(search_table[2, swap_index], search_table[1, swap_index])]
+    optimal_distance <- optimal_distance2
+    distance_sequence <- c(distance_sequence, optimal_distance)
+    tabu_table <- c(tabu_table, swap_index)
+    if (length(tabu_table) > tabu_list_length) {
+      tabu_table <- tabu_table[-1]
+    }
+    if (optimal_distance < initial_distance) {
+      optimal_route <- theta
+      initial_distance <- optimal_distance
+    }
+  }
+  return(list(optimal_route = optimal_route, shortest_distance = initial_distance, distance_sequence = distance_sequence))
+}
+
+
+# Calculate distances between cities
+city_distances <- as.matrix(dist(city_data))
+
+# Set parameters for TABU search
+max_iterations <- 1000
+tabu_list_length <- 40
+
+# Run TABU search
+result <- find_optimal_route(city_distances, max_iterations, tabu_list_length)
+optimal_route <- result$optimal_route
+shortest_distance <- result$shortest_distance
+distance_sequence <- result$distance_sequence
+
+# Print the results
+cat("Shortest distance:", shortest_distance, "\n")
+cat("Optimal route:\n")
+print(optimal_route)
+cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
+
+pdf("opt_tabu.pdf")
+plot(city_data, main = "TABU - TSP", col = "red")
+lines(city_data[optimal_route, 1], city_data[optimal_route, 2], col = "blue")
+points(city_data[1, ], col = "black", pch = 16)
+legend("topright", legend = c("Optimal Tour", "Start"), col = c("blue", "black"), pch = c(NA, 16),  lty=c(1, NA))
+grid()
+dev.off()
+
+# Plot time series of the shortest distance found over iterations
+optimal_route_iteration <- which.min(distance_sequence)
+reasonable_plot_range <- min(optimal_route_iteration + 1000, max_iterations)
+pdf("distance_iter.pdf")
+plot.ts(distance_sequence[1:reasonable_plot_range], xlab = "Iterations", ylab = "Distance", col = "darkgreen", ylim = c(3, max(distance_sequence)))
+legend("topright", legend = c("Optimal Distance"), col = c("darkgreen"), lty = 1, cex = 0.8)
+grid()
+dev.off()
+
+
+
+
+# Seed 2000
+
+# > cat("Shortest distance:", shortest_distance, "\n")
+# Shortest distance: 3.776257 
+# > cat("Optimal route:\n")
+# Optimal route:
+#   > print(optimal_route)
+# [1]  1 19 13  3 16 11  6  2  5 10 20  7  4 21  8 12  9 15 18 17 17  1
+# > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
+# Number of iterations to find optimal route: 927 
+
+#Random seed
+
+# > cat("Shortest distance:", shortest_distance, "\n")
+# Shortest distance: 3.732432 
+# > cat("Optimal route:\n")
+# Optimal route:
+#   > print(optimal_route)
+# [1]  1 14  3 18 18 17 17  9  9 15 12  8 21  4  7 20 10  6  2  5 19  1
+# > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
+# Number of iterations to find optimal route: 900 
+
+#All time best random seed 
+
+# > cat("Shortest distance:", shortest_distance, "\n")
+# Shortest distance: 3.581809 
+# > cat("Optimal route:\n")
+# Optimal route:
+#   > print(optimal_route)
+# [1]  1 14 13  3 16 11  6  2  5  7  4  21  12  9  8  15  18  10  17  20  19
+# > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
+# Number of iterations to find optimal route: 292 
+\end{lstlisting}
+\end{tcolorbox}
+
+\vspace{10mm}
+\section*{Exercise 5 b): Stochastic Gradient Descent}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black,breakable]
+\begin{lstlisting}[caption={Exercise 5b}, label={lst:sgd}]
+# Load data
+dataset <- read.table("data/functionEstimationNN.ascii", header = FALSE, col.names = c("x", "y"))
+
+# Sample a subset of the data
+set.seed(123) # For reproducibility
+subset_size <- 1000
+subset <- dataset[sample(nrow(dataset), subset_size), ]
+
+# Train-test split
+train_ratio <- 0.8
+train_indices <- sample(1:nrow(subset), train_ratio * nrow(subset))
+train_set <- subset[train_indices, ]
+test_set <- subset[-train_indices, ]
+
+# Extract train and test data
+x_train <- train_set$x
+y_train <- train_set$y
+x_test <- test_set$x
+y_test <- test_set$y
+
+# Network parameters
+n_inputs <- 1
+n_hidden <- 50
+n_outputs <- 1
+
+# Initialize weights and biases
+weights_hidden <- matrix(rnorm(n_inputs * n_hidden, sd = sqrt(2/n_inputs)), nrow = n_inputs, ncol = n_hidden)
+bias_hidden <- runif(n_hidden, min = 0, max = 1)
+weights_output <- matrix(rnorm(n_hidden * n_outputs, sd = sqrt(2/n_hidden)), nrow = n_hidden, ncol = n_outputs)
+bias_output <- runif(n_outputs, min = 0, max = 1)
+
+# Hyperparameters
+learning_rate <- 0.001
+learning_rate_decay <- 1e-4
+batch_size <- 50
+n_epochs <- 200
+
+# Train network with SGD
+SSE_seq <- MSE_seq <- MSE_test_seq <- NULL
+iter <- 0
+for (epoch in 1:n_epochs) {
+  learning_rate <- learning_rate / (1 + epoch * learning_rate_decay)
+  x_shuffled <- x_train
+  y_shuffled <- y_train
+  n_batches <- ceiling(length(x_train) / batch_size)
+  batches <- split(1:length(x_train), rep(1:n_batches, each = batch_size, length.out = length(x_train)))
+  
+  for (batch in batches) {
+    iter <- iter + 1
+    x_batch <- x_shuffled[batch]
+    y_batch <- y_shuffled[batch]
+    
+    # Forward propagation
+    hidden_output <- pmax(x_batch %*% weights_hidden + bias_hidden, 0) # ReLU activation
+    y_pred_batch <- hidden_output %*% weights_output + bias_output
+    
+    # Loss calculation
+    sse_batch <- sum((y_pred_batch - y_batch)^2)
+    mse_batch <- sse_batch / length(batch)
+    SSE_seq <- c(SSE_seq, sse_batch)
+    MSE_seq <- c(MSE_seq, mse_batch)
+    
+    # Backward propagation
+    d_y_sse_batch <- - 2 * (y_batch - y_pred_batch) / length(batch)
+    d_weights_output <- t(hidden_output) %*% d_y_sse_batch
+    d_bias_output <- colSums(d_y_sse_batch)
+    d_hidden <- d_y_sse_batch %*% t(weights_output) * (hidden_output > 0)
+    d_weights_hidden <- t(x_batch) %*% d_hidden
+    d_bias_hidden <- colSums(d_hidden)
+    
+    # Update weights and biases
+    weights_hidden <- weights_hidden - learning_rate * d_weights_hidden
+    bias_hidden <- bias_hidden - learning_rate * d_bias_hidden
+    weights_output <- weights_output - learning_rate * d_weights_output
+    bias_output <- bias_output - learning_rate * d_bias_output
+    
+    # Forward propagation for test data
+    hidden_output_test <- pmax(x_test %*% weights_hidden + bias_hidden, 0)
+    y_pred_test <- hidden_output_test %*% weights_output + bias_output
+    mse_test <- sum((y_pred_test - y_test)^2) / length(y_test)
+    MSE_test_seq <- c(MSE_test_seq, mse_test)
+  }
+  
+  # Print MSE for current epoch
+  cat("Epoch:", epoch, "| MSE:", MSE_seq[length(MSE_seq)], "| Learning Rate:", learning_rate, "\n")
+}
+
+# Plot MSE for training and test data
+# Plot MSE for training and test data with y-axis scaled from 0 to 2
+pdf("MSE_train_test.pdf")
+plot(MSE_seq, type = "l", xlab = "Iteration", ylab = "MSE ", col = "black", ylim = c(0, 0.2))
+lines(MSE_test_seq, type = "l", col = "red")
+legend("topright", legend = c("Training MSE", "Test MSE"), col = c("black", "red"), lty = 1)
+grid()
+dev.off()
+
+pdf("True_v_Predict.pdf")
+# Plot true vs. predicted values
+plot(x_test, y_test, col = "blue", main = "True vs. Predicted Values", xlab = "x_test", ylab = "y")
+points(x_test, y_pred_test, col = "red")
+legend("topright", legend = c("True Data", "Predicted Values"), col = c("blue", "red"), lty = 1)
+grid()
+dev.off()
+# Calculate residuals
+residuals <- abs(y_test - y_pred_test)
+
+# # Plot residuals vs. predicted values
+# plot(y_pred_test, residuals, col = "blue", main = "Residuals vs. Predicted Values", xlab = "Predicted Values", ylab = "Residuals")
+# abline(h = 0, col = "red")
+
+# Histogram of residuals
+pdf("Residual_histo.pdf")
+hist(residuals, col = "lightblue", main = "Histogram of Residuals", xlab = "Residuals", ylab = "Frequency")
+grid()
+dev.off()
+# Scatterplot of residuals
+# plot(y_pred_test, residuals, col = "blue", main = "Scatterplot of Residuals", xlab = "Predicted Values", ylab = "Residuals")
+# abline(h = 0, col = "red")
+\end{lstlisting}
+\end{tcolorbox}

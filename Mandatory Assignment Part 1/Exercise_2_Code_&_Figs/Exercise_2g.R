@@ -29,7 +29,7 @@ red_palette <- colorRampPalette(c("#67000D", "#A50F15", "#CB181D", "#EF3B2C", "#
 # Plot the contour plot with the reversed custom red color palette
 pdf("contour_plot.pdf")
 #contour(tau_sq_grid, p_grid, z, levels = levels_, xlab = "squared_tau", ylab = "p", col = red_palette(length(levels_)))
-filled.contour(tau_sq_grid, p_grid, z, ylab = 'p', xlab = 'squared_tau', levels = levels_, col = red_palette(length(levels_))) 
+filled.contour(tau_sq_grid, p_grid, z, ylab = 'p', xlab = expression(tau^2), levels = levels_, col = red_palette(length(levels_))) 
 
 # Find the ML estimator and mark it in the plot
 ML_idx <- which(z == max(z), arr.ind = TRUE)

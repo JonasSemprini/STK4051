@@ -34,6 +34,6 @@ tau <- 80
 # Calculate beta estimator for each y value
 beta_hat_y <- calc_beta_hat(y, p, tau)
 
-residuals = sum((beta_hat_y-y)^2)
+residuals = sum((beta_hat_y-betaGT)^2)
 
 print(residuals)

@@ -13,7 +13,7 @@ calculate_journey_distance <- function(route, distances) {
 # Function to perform TABU search
 find_optimal_route <- function(distances, max_iterations, tabu_list_length) {
   num_cities <- nrow(distances)  # Number of cities
-  theta <- c(1, sample(2:num_cities), 1)  # Random order and returns to the starting city
+  theta <- c(1, sample(2:num_cities), 1)# Random order and returns to the starting city
   d <- as.vector(as.matrix(distances))
   initial_distance <- calculate_journey_distance(theta, distances)  # Total distance of the initial route
   optimal_distance <- initial_distance  # Initial optimal distance
@@ -56,7 +56,7 @@ find_optimal_route <- function(distances, max_iterations, tabu_list_length) {
 city_distances <- as.matrix(dist(city_data))
 
 # Set parameters for TABU search
-max_iterations <- 10000
+max_iterations <- 1000
 tabu_list_length <- 40
 
 # Run TABU search
@@ -64,6 +64,12 @@ result <- find_optimal_route(city_distances, max_iterations, tabu_list_length)
 optimal_route <- result$optimal_route
 shortest_distance <- result$shortest_distance
 distance_sequence <- result$distance_sequence
+
+# Print the results
+cat("Shortest distance:", shortest_distance, "\n")
+cat("Optimal route:\n")
+print(optimal_route)
+cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
 
 pdf("opt_tabu.pdf")
 plot(city_data, main = "TABU - TSP", col = "red")
@@ -82,25 +88,38 @@ legend("topright", legend = c("Optimal Distance"), col = c("darkgreen"), lty = 1
 grid()
 dev.off()
 
-# Print the results
-cat("Shortest distance:", shortest_distance, "\n")
-cat("Optimal route:\n")
-print(optimal_route)
-cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
 
 
 
 # Seed 2000
 
 # > cat("Shortest distance:", shortest_distance, "\n")
-# Shortest distance: 3.790939 
+# Shortest distance: 3.776257 
 # > cat("Optimal route:\n")
 # Optimal route:
 #   > print(optimal_route)
-# [1]  1 19 14 13  3 16 11  6  2  5 10 20  7  4 21  8 12  9 15 18 17  1
+# [1]  1 19 13  3 16 11  6  2  5 10 20  7  4 21  8 12  9 15 18 17 17  1
 # > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
-# Number of iterations to find optimal route: 6387 
+# Number of iterations to find optimal route: 927 
 
-# Random Seed 
-#Best distance: 3.62219362770275
-#Optimal route: 1 17 9 18 15 12 19 14 13 3 
+#Random seed
+
+# > cat("Shortest distance:", shortest_distance, "\n")
+# Shortest distance: 3.732432 
+# > cat("Optimal route:\n")
+# Optimal route:
+#   > print(optimal_route)
+# [1]  1 14  3 18 18 17 17  9  9 15 12  8 21  4  7 20 10  6  2  5 19  1
+# > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
+# Number of iterations to find optimal route: 900 
+
+#All time best random seed 
+
+# > cat("Shortest distance:", shortest_distance, "\n")
+# Shortest distance: 3.581809 
+# > cat("Optimal route:\n")
+# Optimal route:
+#   > print(optimal_route)
+# [1]  1 14 13  3 16 11  6  2  5  7  4  21  12  9  8  15  18  10  17  20  19
+# > cat("Number of iterations to find optimal route:", which.min(distance_sequence), "\n")
+# Number of iterations to find optimal route: 292 
