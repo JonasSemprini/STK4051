@@ -80,7 +80,7 @@ best_cooling_rate <- as.numeric(names(results)[best_result])
 # Output best tour and total time for the best cooling rate
 cat("Best Cooling Rate:", best_cooling_rate, "\n")
 cat("Best Tour:", results[[as.character(best_cooling_rate)]]$tour, "\n")
-cat("Best Total Time:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
+cat("Best Total Distance:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
 
 # Plot the most optimal trip
 optimal_path <- c(results[[as.character(best_cooling_rate)]]$tour, results[[as.character(best_cooling_rate)]]$tour[1])
@@ -112,7 +112,7 @@ dev.off()
 # > cat("Best Tour:", results[[as.character(best_cooling_rate)]]$tour, "\n")
 # Best Tour: 17 9 15 18 12 8 21 4 7 20 10 5 2 6 11 16 3 13 14 19 1 
 # > cat("Best Total Time:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
-# Best Total Time: 3.770697 
+# Best Total Distance: 3.770697 
 
 
 #Seed(124)
@@ -120,5 +120,5 @@ dev.off()
 # > cat("Best Tour:", results[[as.character(best_cooling_rate)]]$tour, "\n")
 # Best Tour: 2 11 16 3 13 14 19 1 17 9 15 18 12 8 21 4 7 20 10 5 6 
 # > cat("Best Total Time:", results[[as.character(best_cooling_rate)]]$total_time, "\n")
-# Best Total Time: 3.902836 
+# Best Total Distance: 3.902836 
 
