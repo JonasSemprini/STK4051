@@ -1,0 +1,92 @@
+\nsection{Problem 3 - (McMC – in Bayesian analysis)}
+We will in this exercise consider a Bayesian
+generalized linear model for identifying influential factors for presence vs absence of malaria
+in blood samples taken from children in Gambia. The data set “gambia” from the geoR package
+is available on the course page. A description of the data is given in an associated file. These
+data are often used for spatial analysis, but we will not consider that aspect here. We will
+assume all observations to be independent and investigate a probit-link between the
+explanatory variables $\boldsymbol{x}$ and a binary response variable $y$. For person $i$ the probit-link between
+explanatory variables and the response is defined as:
+\begin{align}
+    \mathbb{P}(y_i = 1) = \Phi(\boldsymbol{\beta}^T \boldsymbol{x}_i)
+\end{align}
+\emph{where $\Phi$ is the cumulative distribution for a standard normal variable. In the Bayesian analysis below we will use the improper prior $p(\boldsymbol{\beta}) \propto 1$, in which case the posterior $p(\boldsymbol{\beta} | \boldsymbol{y})$ is
+proportional to the likelihood $L(\boldsymbol{\beta} | \boldsymbol{y})$.}
+\nssection{a.)}
+\emph{Define $p_i = \Phi(\boldsymbol{\beta}^T \boldsymbol{x}_i)$ and derive the likelihood function:} 
+\begin{align}
+    L \left(\boldsymbol{\beta}| \boldsymbol{y} \right) = \prod_{i=1}^{n} p_{i}^{y_i}(1 - p_i)^{1 - y_i} \label{eq:likelihood_exercise_3}
+\end{align}
+\emph{Discuss how you can implement a numerically robust evaluation of this likelihood.
+How should you handle the situation where $\boldsymbol{\beta}^T \boldsymbol{x}_i$ has a large absolute value? In a Metropolis Hastings algorithm, you are asked to evaluate the ratio of two likelihoods, how is this done in a numerically stable way?}\spaze
+\textbf{Solution:} \spaze
+
+\nssection{b.)}  
+\emph{Below you will be asked to implement a random walk using a random scan Metropolis
+Hastings algorithm to investigate the posterior distribution. From the general
+expression for the Metropolis Hastings (M-H) ratio, deduce the M-H ratio for the
+random walk. Which criteria need to be met in order for the Markov chain to converge
+to the stationary distribution? Which of these criteria does the M-H ratio help you to
+fulfill?}  \spaze
+\textbf{Solution:} \spaze
+
+\nssection{c.)}
+\emph{For the Gambia data: Implement a random walk algorithm with a random scan to
+sample from the posterior distribution $p(\boldsymbol{\beta} | \boldsymbol{y})$, and apply it. Use a model containing the explanatory variables: age, netuse, treated, green, and phc, in addition to the constant term. (Hint: 1-Remember to standardize the design matrix, 2- put some effort
+into a robust evaluation of the likelihood ratio, see a)}  \spaze
+\textbf{Solution:} \spaze
+
+\nssection{d.)}
+\emph{Display plots which illustrate the convergence properties of the method. Comment on
+the convergence properties of your algorithm. If there are any obvious problems,
+suggest modifications and revisit c to improve convergence.} \spaze 
+\textbf{Solution:} \spaze
+
+\nssection{e.)}
+\emph{A common way to sample the distribution above is to introduce a latent variable, $z_i$, which is
+defined such that $\bl y_i = 1 \br \iff \bl z_i > 0\br$, and}
+\begin{align}
+    z_i \sim \mathcal{N} \left( \boldsymbol{\beta}^T \boldsymbol{x}_i, 1^2 \right)
+\end{align}
+\emph{Argue that the expanded posterior probability distribution}
+\begin{align*}
+p\left(\boldsymbol{\beta}, \boldsymbol{z} | \boldsymbol{y} \right) \propto  \prod_{i=1}^{n} \left[I(z_i > 0) \cdot I(y_i = 1) + I(z_i \leq 0) I(y_i=0) \right] \phi \left( z_i - \boldsymbol{\beta}^T \boldsymbol{x}_i \right)
+\end{align*}
+\emph{will have the prescribed marginal posterior, $p(\boldsymbol{\beta} | \boldsymbol{y})$ from expression (\ref{eq:likelihood_exercise_3}). (Hint: consider one data point first and integrate out the latent variable.)} \spaze
+\textbf{Solution:} \spaze
+
+\nssection{f.)}
+\emph{You shall now derive the conditional distributions needed for Gibbs sampling. Show
+that:}
+\begin{align*}
+    p(z_i | \boldsymbol{z}_{-i}, \boldsymbol{\beta}, \boldsymbol{y}) \propto \begin{cases}
+      I(z_i \leq 0) \phi(z_i - \boldsymbol{\beta} \boldsymbol{x}_i),   & \text{ if } y_i = 0 \\[5pt]
+      I(z_i > 0) \phi(z_i - \boldsymbol{\beta} \boldsymbol{x}_i),   & \text{ if } y_i = 1
+    \end{cases}
+\end{align*}
+\emph{and} 
+\begin{align*}
+    p(\boldsymbol{\beta} | \boldsymbol{z}, \boldsymbol{y}) \propto \text{exp} \left(-0.5 \sum_{i=1}^{n} (z_i - \boldsymbol{\beta}^T \boldsymbol{x}_i)^2 \right)
+\end{align*}
+\emph{Use results from multi linear regression to deduce that the distribution $p(\boldsymbol{\beta} | \boldsymbol{z}, \boldsymbol{y})$, is multi-normal with parameters:}
+\begin{align*}
+    \mathbb{E}(\boldsymbol{\beta} | \boldsymbol{z}, \boldsymbol{y}) = \left(\boldsymbol{X}^T \boldsymbol{X} \right)^{-1}\boldsymbol{X}^T \boldsymbol{z}
+\end{align*}
+\emph{and}
+\begin{align*}
+    \text{Cov}(\boldsymbol{\beta} | \boldsymbol{z}, \boldsymbol{y}) = (\boldsymbol{X}^T \boldsymbol{X})^{-1}
+\end{align*}
+\emph{State the result from multivariate linear regression you are using and show how you use
+the connection to derive the results.} \spaze
+\textbf{Solution:} \spaze
+
+\nssection{g.)}
+\emph{ Implement the Gibbs sampler, and use this to solve the inference of Gambia data. Use
+a block update to sample $p(\boldsymbol{\beta} | \boldsymbol{z}, \boldsymbol{y})$. Make illustrations of the convergence of this chain as well (as done for the random walk approach in in d). (Hint: to sample from the multi-normal distribution use code from a library, e.g. \texttt{rmvnorm} from \texttt{mvtnorm}} \spaze 
+\textbf{Solution:} \spaze
+
+\nssection{h.)}
+\emph{Compare the two approaches you have implemented for evaluating the posterior.
+Compare implementation, runtime effects, and results e.g. burn in, convergence, mixing
+etc.} \spaze 
+\textbf{Solution:} \spaze

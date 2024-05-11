@@ -1,0 +1,395 @@
+\section{GitHub repository} 
+\section{Source Code} \label{appendix:b}
+\section*{Exercise 1 b): Illustrate the bounding function $\mathcal{B}(x)$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 1b}, label={lst:boundary_func}]
+# Define the log-likelihood function
+log_likelihood <- function(x) {
+  return(log(1/(2*pi)) - 0.5 * x^2)
+}
+
+# Define linearization functions
+linearization_minus_1 <- function(x) {
+  return(log(1/(2*pi)) + 0.5 + x)
+}
+
+linearization_0 <- function(x) {
+  return(rep(log(1/(2*pi)), length(x)))
+}
+
+linearization_plus_1 <- function(x) {
+  return(log(1/(2*pi)) + 0.5 - x)
+}
+
+# Define function to find intersection point between two lines
+find_intersection <- function(a1, b1, a2, b2) {
+  x_intersect <- (b2 - b1) / (a1 - a2)
+  y_intersect <- a1 * x_intersect + b1
+  return(c(x_intersect, y_intersect))
+}
+
+# Generate x values
+x_values <- seq(-3, 3, length.out = 1000)
+
+# Compute linearization values
+linearization_minus_1_values <- linearization_minus_1(x_values)
+linearization_0_values <- linearization_0(x_values)
+linearization_plus_1_values <- linearization_plus_1(x_values)
+
+# Find intersection points between linearization lines
+intersection_minus_1_0 <- find_intersection(1, log(1/(2*pi)) + 0.5, 0, log(1/(2*pi)))
+intersection_0_plus_1 <- find_intersection(-1, log(1/(2*pi)), 0, log(1/(2*pi)) + 0.5)
+intersection_minus_1_plus_1 <- find_intersection(1, log(1/(2*pi)) + 0.5, -1, log(1/(2*pi)) + 0.5)
+
+# Plot
+plot(x_values, log_likelihood(x_values), type='l', col='blue', lwd=2, ylim=c(-5, 0),
+     xlab='x', ylab='Log-Likelihood', main='Bounding Function for Log-Likelihood of Standard Normal Distribution')
+lines(x_values, linearization_minus_1_values, col='red', lty='dashed', lwd=2)
+lines(x_values, linearization_0_values, col='green', lty='dashed', lwd=2)
+lines(x_values, linearization_plus_1_values, col='orange', lty='dashed', lwd=2)
+points(intersection_minus_1_0[1], intersection_minus_1_0[2], col='black', pch=19)
+points(-intersection_minus_1_0[1], intersection_minus_1_0[2], col='black', pch=19)
+#points(intersection_0_plus_1[1], intersection_0_plus_1[2], col='black', pch=19)
+points(intersection_minus_1_plus_1[1], intersection_minus_1_plus_1[2], col='black', pch=19)
+
+abline(v = -0.5, col='black', lty='dotted')
+abline(v = 0.5, col='black', lty='dotted')
+legend('topright', legend=c('Log-Likelihood', 'Linearization at -1', 'Linearization at 0', 'Linearization at 1', 'Vertical Lines at -0.5 and 0.5', 'Intersection Points'),
+       col=c('blue', 'red', 'green', 'orange', 'black', 'black'), lty=c(1, 2, 2, 2, 0, NA), pch=c(NA, NA, NA, NA, NA, 19))
+grid()
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 1 c): Rejection Sampling}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 1c}, label={lst:rejection}]
+# Define the standard normal density function
+set.seed(123)
+phi <- function(x) {
+  return(dnorm(x))
+}
+
+# Define the target density function g(x)
+g <- function(x) {
+  ifelse(abs(x) <= 0.5, 1/3, exp(-abs(x) + 0.5) / 3)
+}
+
+# Rejection sampling function
+rejection_sampling <- function(iterations) {
+  accepted <- 0
+  
+  for (i in 1:iterations) {
+    # Step 1: Sample U1, U2 from Uniform [0,1]
+    U1 <- runif(1)
+    U2 <- runif(1)
+    
+    # Step 2: Sample i from {1, 2, 3} with equal probability
+    i <- sample(1:3, 1, prob = c(1/3, 1/3, 1/3))
+    
+    # Step 3: Generate proposal x_p based on i
+    if (i == 1) {
+      x_p <- U1 - 0.5
+    } else if (i == 2) {
+      x_p <- log(1 - U1) - 0.5
+    } else {
+      x_p <- -log(1 - U1) + 0.5
+    }
+    
+    # Step 4: Accept or reject proposal based on U2 and the acceptance condition
+    if (U2 < sqrt(2 * pi) * phi(x_p) / (3 * g(x_p))) {
+      accepted <- accepted + 1
+      # Here you can store or print the accepted proposals
+    }
+  }
+  
+  return(accepted / iterations)  # Return the average acceptance rate
+}
+
+# Set the number of iterations
+iterations <- 10000
+
+# Run rejection sampling and compute the average acceptance rate
+average_acceptance_rate <- rejection_sampling(iterations)
+print(paste("Average Acceptance Rate:", average_acceptance_rate))
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{30mm}
+\section*{Exercise 1 d): Importance Sampling}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black,breakable]
+\begin{lstlisting}[caption={Exercise 1d}, label={lst:importance}]
+# Set seed for reproducibility
+set.seed(123)
+
+# Define the standard normal density function
+phi <- function(x) {
+  return(dnorm(x))
+}
+
+g <- function(x) {
+  ifelse(abs(x) <= 0.5, 1/3, exp(-abs(x) + 0.5) / 3)
+}
+
+# Importance sampling function
+importance_sampling <- function(n_samples) {
+  # Generate samples from the proposal distribution (standard normal)
+  samples <- runif(n_samples)
+  
+  # Calculate importance weights
+  weights <- sapply(samples, function(x) g(x) / phi(x))
+  
+  # Normalize weights
+  normalized_weights <- weights / sum(weights)
+  
+  # Compute estimate of the expectation
+  estimate <- sum(samples * normalized_weights)
+  
+  return(estimate)
+}
+
+# Number of samples to generate
+n_samples <- 10000
+
+# Run importance sampling
+estimate <- importance_sampling(n_samples)
+
+# Print estimate of the expectation
+print(paste("Estimate of the expectation:", estimate))
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 1 e): Numerical Comparison (Rejection vs Importance)}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 1e}, label={lst:compare}]
+set.seed(2000)
+# Define the target density function g(x)
+g <- function(x) {
+  ifelse(abs(x) <= 0.5, 1/3, exp(-abs(x) + 0.5) / 3)
+}
+
+# Function h(x)
+h <- function(x) {
+  return(x^2 * (x > 0))
+}
+
+# Rejection sampling function without NA estimates
+# Rejection sampling function without NA estimates
+rejection_sampling <- function(n_samples) {
+  accepted_samples <- numeric(0)
+  while (length(accepted_samples) == 0) {
+    for (i in 1:n_samples) {
+      accepted <- FALSE
+      while (!accepted) {
+        # Step 1: Sample U1, U2 from Uniform [0,1]
+        U1 <- runif(1)
+        U2 <- runif(1)
+        
+        # Step 2: Sample i from {1, 2, 3} with equal probability
+        i <- sample(1:3, 1, prob = c(1/3, 1/3, 1/3))
+        
+        # Step 3: Generate proposal x_p based on i
+        if (i == 1) {
+          x_p <- U1 - 0.5
+        } else if (i == 2) {
+          x_p <- -log(1 - U1) + 0.5
+        } else {
+          x_p <- log(1 - U1) - 0.5
+        }
+        
+        # Step 4: Accept or reject proposal based on U2 and the acceptance condition
+        if (U2 < sqrt(2 * pi) * dnorm(x_p) / (3 * g(x_p))) {
+          accepted_samples <- c(accepted_samples, x_p)
+          accepted <- TRUE
+        }
+      }
+    }
+  }
+  
+  estimate <- mean(h(accepted_samples))
+  return(estimate)
+}
+
+
+
+
+importance_sampling <- function(n_samples) {
+  # Generate samples from the proposal distribution (standard normal)
+  samples <- runif(n_samples)
+  
+  # Calculate importance weights
+  weights <- sapply(samples, function(x) g(x) / h(x))
+  
+  # Normalize weights
+  normalized_weights <- weights / sum(weights)
+  
+  # Compute estimate of the expectation
+  estimate <- sum(samples * normalized_weights)
+  
+  return(estimate)
+}
+# Number of iterations
+N <- 1000
+
+# Results storage
+rejection_estimates <- numeric(N)
+importance_estimates <- numeric(N)
+
+# Perform the numerical study for rejection sampling
+for (i in 1:N) {
+  rejection_estimates[i] <- rejection_sampling(1)
+}
+
+# Perform the numerical study for importance sampling
+for (i in 1:N) {
+  importance_estimates[i] <- importance_sampling(1)
+}
+
+# Compute mean estimates
+rejection_mean <- mean(rejection_estimates)
+importance_mean <- mean(importance_estimates)
+
+rejection_sd <- sd(rejection_estimates, na.rm = TRUE)
+importance_sd <- sd(importance_estimates)
+
+# Print results
+print("Rejection Sampling:")
+print(paste("Mean Estimate:", rejection_mean))
+print(paste("Standard Deviation:", rejection_sd))
+
+print("\nImportance Sampling:")
+print(paste("Mean Estimate:", importance_mean))
+print(paste("Standard Deviation:", importance_sd))
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 2 a): Sequential Monte Carlo algorithm for inference about $p(x_t | \boldsymbol{y}_{1:t}), \ t= 1, 2, \ldots, n$}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 2a}, label={lst:MC_2a}]
+set.seed(2000)
+# Parameters
+a <- 0.85
+lambda <- 0
+sigma_sq <- 0.5^2
+
+# Load data
+data <- read.table("data/tgsim.ascii", header = FALSE)
+colnames(data) <- c('y')
+y <- data$y
+n <- length(y)
+
+# Initialize
+n_particles <- 1000
+particles <- matrix(0, nrow = n_particles, ncol = n)
+weights <- rep(1/n_particles, n_particles)
+
+# Initialize vectors to store estimates
+E_xt <- numeric(n)
+Var_xt <- numeric(n)
+
+# SIS algorithm
+for (t in 2:n) {
+  # Propagate particles forward according to the state transition model
+  particles[, t] <- a * particles[, t-1] + lambda + rnorm(n_particles, mean = 0, sd = sqrt(sigma_sq))
+  
+  # Sample epsilon from normal distribution
+  epsilon <- rnorm(n_particles, mean = 0, sd = sqrt(sigma_sq))
+  
+  # Assign discrete values y_t based on intervals
+  y <- ifelse(particles[, t] < -0.5, 1, ifelse(particles[, t] < 0.5, 2, 3))
+  
+  # Calculate importance weights
+  likelihood <- ifelse(y == 1, dnorm(particles[, t], mean = 0, sd = sqrt(sigma_sq)),
+                       ifelse(y == 2, dnorm(particles[, t], mean = 0, sd = sqrt(sigma_sq)),
+                              dnorm(particles[, t], mean = 0, sd = sqrt(sigma_sq))))
+  weights <- weights * likelihood
+  
+  # Normalize weights
+  weights <- weights / sum(weights)
+  
+  # Resampling
+  indices <- sample(1:n_particles, n_particles, replace = TRUE, prob = weights)
+  particles <- particles[indices, ]
+  weights <- rep(1/n_particles, n_particles)
+  
+  # Calculate estimates
+  E_xt <- colMeans(particles)
+  Var_xt <- apply(particles, 2, var)
+}
+
+# Plotting
+plot(E_xt, type = "l", col = "blue", xlab = "Time", ylab = "Expectation", main = "E(x_t | y_{1:t})")
+plot(Var_xt, type = "l", col = "red", xlab = "Time", ylab = "Variance", main = "Var(x_t | y_{1:t})")
+# lines(E_xt + sqrt(Var_xt), col = "red")
+# lines(E_xt - sqrt(Var_xt), col = "darkgreen")
+\end{lstlisting}
+\end{tcolorbox}
+\vspace{15mm}
+\section*{Exercise 2 b): Sequential Monte Carlo algorithm for inference about $a$, i.e.
+estimate $p(a | \boldsymbol{y}_{1:251})$.}
+\begin{tcolorbox}[colback=white!95!black,colframe=white!50!black, breakable]
+\begin{lstlisting}[caption={Exercise 2b}, label={lst:MC_2b}]
+# Load required libraries
+# library("dplyr")
+set.seed(2000)
+# Define the prior distribution for a (uniform)
+prior_sample <- function(n_samples) {
+  runif(n_samples, 0, 1)
+}
+
+
+# Likelihood function
+likelihood <- function(particles, y, sigma_sq) {
+  # Compute likelihood based on the observed class 'y'
+  likelihood <- ifelse(y == 1, dnorm(particles, mean = 0, sd = sqrt(0.5^2)),
+                       ifelse(y == 2, dnorm(particles, mean = 0, sd = sqrt(0.5^2)),
+                              dnorm(particles, mean = 0, sd = sqrt(0.5^2))))
+  
+  # Return the likelihood
+  return(likelihood)
+}
+
+
+# Sequential Monte Carlo algorithm
+sequential_monte_carlo <- function(y, n_particles) {
+  # Initialize particles with samples from the prior distribution
+  particles <- prior_sample(n_particles)
+  
+  # Initialize weights
+  weights <- rep(1/n_particles, n_particles)
+  
+  # Iterate over observations
+  for (obs in y) {
+    # Compute likelihood for each particle
+    particle_likelihood <- likelihood(particles, obs)
+    
+    # Compute unnormalized weights
+    unnormalized_weights <- weights * particle_likelihood
+    
+    # Normalize weights
+    normalized_weights <- unnormalized_weights / sum(unnormalized_weights)
+    
+    # Resample particles
+    resampled_indices <- sample.int(n_particles, size = n_particles, replace = TRUE, prob = normalized_weights)
+    particles <- particles[resampled_indices]
+    
+    # Reset weights
+    weights <- rep(1/n_particles, n_particles)
+  }
+  
+  # Estimate for p(a | y)
+  estimate <- mean(particles)
+  
+  return(estimate)
+}
+
+# Load data
+data <- read.table("data/tgsim.ascii", header = FALSE)
+colnames(data) <- c('y')
+y <- data$y
+
+# Number of particles
+n_particles <- 1000
+# Run sequential Monte Carlo algorithm
+estimate <- sequential_monte_carlo(y, n_particles)
+print(paste("Estimate of p(a | y):", estimate))
+\end{lstlisting}
+\end{tcolorbox}
